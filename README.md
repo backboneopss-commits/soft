@@ -14,7 +14,12 @@ setter**.
 - **Supabase** — Postgres + Auth + Row Level Security (aislamiento multi-cliente)
 - **Claude API** — para el chat de guiones (Fase 2)
 
-## Puesta en marcha
+## Deploy (ponerlo online)
+
+¿Querés probarlo en vivo (también desde el celular)? Seguí
+[`DEPLOY.md`](DEPLOY.md): deploy gratis en Vercel + Supabase en ~15 minutos.
+
+## Puesta en marcha (local)
 
 ### 1. Crear el proyecto en Supabase
 

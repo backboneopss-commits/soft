@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Backbone — plataforma multi-cliente: CRM, métricas de ventas, contenido/SOPs y chat IA de guiones.",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
