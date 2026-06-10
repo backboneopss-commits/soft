@@ -5,8 +5,8 @@ biblioteca de contenido/SOPs y (próximamente) guiones con IA e integración con
 redes sociales. Cada cliente vive aislado, con roles **administrador / closer /
 setter**.
 
-> Estado: **Módulo 1 — Base + CRM + Roles** ✅
-> Próximo: Fase 2 (Guiones IA), Fase 3 (Instagram/TikTok/Facebook).
+> Estado: **Módulo 1 — Base + CRM + Roles** ✅ · **Fase 2 — Guiones IA** ✅
+> Próximo: Fase 3 (Instagram/TikTok/Facebook).
 
 ## Stack
 
@@ -25,6 +25,10 @@ setter**.
 3. En **Authentication → Providers**, dejá habilitado *Email*. Para probar
    rápido podés desactivar la confirmación por email
    (*Authentication → Sign In / Up → Confirm email = off*).
+4. Para el chat de **Guiones IA**, ejecutá también
+   [`supabase/02_guiones.sql`](supabase/02_guiones.sql) y completá
+   `ANTHROPIC_API_KEY` en `.env.local`
+   (la conseguís en [console.anthropic.com](https://console.anthropic.com)).
 
 ### 2. Configurar variables de entorno
 
@@ -95,8 +99,9 @@ supabase/schema.sql        # esquema + RLS + roles
 
 ## Roadmap
 
-- **Fase 2 — Guiones IA**: chat con Claude que usa el contenido/SOPs y el
-  histórico de ventas del cliente para generar guiones a medida.
+- **Fase 2 — Guiones IA** ✅: chat con Claude que usa el contenido/SOPs y el
+  histórico de ventas ganadas del cliente para generar guiones a medida, con
+  respuestas en streaming y conversaciones guardadas por cliente.
 - **Fase 3 — Redes & Métricas**: Instagram Graph API, TikTok Business API y
   Meta Ads. Ingesta automática de métricas y panel de medición.
 - **Más adelante**: importación directa desde Google Drive, notificaciones,

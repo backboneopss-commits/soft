@@ -61,6 +61,24 @@ export interface ContentAsset {
   created_at: string;
 }
 
+export interface GuionThread {
+  id: string;
+  organization_id: string;
+  created_by: string | null;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GuionMessage {
+  id: string;
+  thread_id: string;
+  organization_id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+}
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrador",
   closer: "Closer",
