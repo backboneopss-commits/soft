@@ -1,24 +1,38 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { PageHeader, EmptyState } from "@/components/ui";
-import StageSelect from "@/components/StageSelect";
-import { createDeal, deleteDeal } from "./actions";
-import type { Contact, Deal } from "@/lib/types";
+import DealRow from "@/components/DealRow";
+import { createDeal } from "./actions";
+import {
+  STAGE_LABELS,
+  STAGE_ORDER,
+  type Contact,
+  type Deal,
+  type DealStage,
+} from "@/lib/types";
 
-function money(n: number) {
-  return new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
-export default async function VentasPage() {
+export default async function VentasPage({
+  searchParams,
+}: {
+  searchParams: { q?: string; stage?: string };
+}) {
   const { profile } = await getCurrentUser();
   const supabase = createClient();
 
+  const q = (searchParams.q ?? "").trim().replace(/[,()]/g, "");
+  const stage = searchParams.stage as DealStage | undefined;
+  const validStage = stage && STAGE_ORDER.includes(stage) ? stage : undefined;
+
+  let dealsQuery = supabase
+    .from("deals")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (validStage) dealsQuery = dealsQuery.eq("stage", validStage);
+  if (q) dealsQuery = dealsQuery.ilike("title", `%${q}%`);
+
   const [{ data: dealsData }, { data: contactsData }] = await Promise.all([
-    supabase.from("deals").select("*").order("created_at", { ascending: false }),
+    dealsQuery,
     supabase.from("contacts").select("id, full_name").order("full_name"),
   ]);
 
@@ -27,68 +41,99 @@ export default async function VentasPage() {
   const contactName = new Map(contacts.map((c) => [c.id, c.full_name]));
   const isAdmin = profile.role === "admin";
 
+  const filterHref = (s?: DealStage) => {
+    const params = new URLSearchParams();
+    if (s) params.set("stage", s);
+    if (q) params.set("q", q);
+    const qs = params.toString();
+    return `/dashboard/ventas${qs ? `?${qs}` : ""}`;
+  };
+
   return (
     <div>
       <PageHeader
         title="Ventas"
-        subtitle="Tu pipeline. Cambiá la etapa y se actualiza al instante."
+        subtitle="Tu pipeline. Cambiá la etapa, editá y filtrá al instante."
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="card overflow-hidden p-0">
-          {deals.length === 0 ? (
-            <div className="p-5">
-              <EmptyState>
-                Sin oportunidades todavía. Creá la primera a la derecha.
-              </EmptyState>
-            </div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/10 text-left text-xs uppercase text-white/40">
-                  <th className="px-4 py-3 font-medium">Oportunidad</th>
-                  <th className="px-4 py-3 font-medium">Valor</th>
-                  <th className="px-4 py-3 font-medium">Etapa</th>
-                  {isAdmin && <th className="px-4 py-3" />}
-                </tr>
-              </thead>
-              <tbody>
-                {deals.map((d) => (
-                  <tr
-                    key={d.id}
-                    className="border-b border-white/5 last:border-0 hover:bg-white/5"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{d.title}</div>
-                      {d.contact_id && contactName.get(d.contact_id) && (
-                        <div className="text-xs text-white/40">
-                          {contactName.get(d.contact_id)}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-white/70">
-                      {money(Number(d.value || 0))}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StageSelect dealId={d.id} current={d.stage} />
-                    </td>
-                    {isAdmin && (
-                      <td className="px-4 py-3 text-right">
-                        <form action={deleteDeal}>
-                          <input type="hidden" name="id" value={d.id} />
-                          <button className="text-xs text-red-400/70 hover:text-red-400">
-                            Eliminar
-                          </button>
-                        </form>
-                      </td>
-                    )}
+        <div>
+          {/* Filtros por etapa */}
+          <div className="mb-3 flex flex-wrap gap-2">
+            <Link
+              href={filterHref(undefined)}
+              className={`badge ${
+                !validStage ? "bg-brand-600/30 text-white" : "bg-white/10 text-white/60"
+              }`}
+            >
+              Todas
+            </Link>
+            {STAGE_ORDER.map((s) => (
+              <Link
+                key={s}
+                href={filterHref(s)}
+                className={`badge ${
+                  validStage === s
+                    ? "bg-brand-600/30 text-white"
+                    : "bg-white/10 text-white/60"
+                }`}
+              >
+                {STAGE_LABELS[s]}
+              </Link>
+            ))}
+          </div>
+
+          {/* Búsqueda */}
+          <form className="mb-4 flex gap-2">
+            {validStage && <input type="hidden" name="stage" value={validStage} />}
+            <input
+              name="q"
+              defaultValue={q}
+              className="input"
+              placeholder="Buscar oportunidad por título…"
+            />
+            <button className="btn-ghost">Buscar</button>
+          </form>
+
+          <div className="card overflow-hidden p-0">
+            {deals.length === 0 ? (
+              <div className="p-5">
+                <EmptyState>
+                  {q || validStage
+                    ? "No hay oportunidades con esos filtros."
+                    : "Sin oportunidades todavía. Creá la primera a la derecha."}
+                </EmptyState>
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-left text-xs uppercase text-white/40">
+                    <th className="px-4 py-3 font-medium">Oportunidad</th>
+                    <th className="px-4 py-3 font-medium">Valor</th>
+                    <th className="px-4 py-3 font-medium">Etapa</th>
+                    <th className="px-4 py-3" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody>
+                  {deals.map((d) => (
+                    <DealRow
+                      key={d.id}
+                      deal={d}
+                      contacts={contacts}
+                      contactName={
+                        d.contact_id ? contactName.get(d.contact_id) ?? null : null
+                      }
+                      canEdit={isAdmin || d.owner_id === profile.id}
+                      canDelete={isAdmin}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
 
+        {/* Alta */}
         <div className="card h-fit">
           <h2 className="mb-4 font-medium">Nueva oportunidad</h2>
           <form action={createDeal} className="space-y-3">

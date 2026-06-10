@@ -41,6 +41,25 @@ export async function updateDealStage(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+export async function updateDeal(formData: FormData) {
+  const supabase = createClient();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const contactId = String(formData.get("contact_id") ?? "");
+  await supabase
+    .from("deals")
+    .update({
+      title: String(formData.get("title") ?? "").trim(),
+      value: Number(formData.get("value") ?? 0) || 0,
+      contact_id: contactId || null,
+    })
+    .eq("id", id);
+
+  revalidatePath("/dashboard/ventas");
+  revalidatePath("/dashboard");
+}
+
 export async function deleteDeal(formData: FormData) {
   const supabase = createClient();
   const id = String(formData.get("id") ?? "");

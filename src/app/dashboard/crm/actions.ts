@@ -23,6 +23,26 @@ export async function createContact(formData: FormData) {
   revalidatePath("/dashboard/crm");
 }
 
+export async function updateContact(formData: FormData) {
+  const supabase = createClient();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  await supabase
+    .from("contacts")
+    .update({
+      full_name: String(formData.get("full_name") ?? "").trim(),
+      email: emptyToNull(formData.get("email")),
+      phone: emptyToNull(formData.get("phone")),
+      instagram: emptyToNull(formData.get("instagram")),
+      source: emptyToNull(formData.get("source")),
+      notes: emptyToNull(formData.get("notes")),
+    })
+    .eq("id", id);
+
+  revalidatePath("/dashboard/crm");
+}
+
 export async function deleteContact(formData: FormData) {
   const supabase = createClient();
   const id = String(formData.get("id") ?? "");
