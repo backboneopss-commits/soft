@@ -5,8 +5,7 @@ biblioteca de contenido/SOPs y (próximamente) guiones con IA e integración con
 redes sociales. Cada cliente vive aislado, con roles **administrador / closer /
 setter**.
 
-> Estado: **Módulo 1 — Base + CRM + Roles** ✅ · **Fase 2 — Guiones IA** ✅
-> Próximo: Fase 3 (Instagram/TikTok/Facebook).
+> Estado: **Módulo 1 — Base + CRM + Roles** ✅ · **Fase 2 — Guiones IA** ✅ · **Fase 3 — Redes & Métricas** ✅
 
 ## Stack
 
@@ -107,7 +106,11 @@ supabase/schema.sql        # esquema + RLS + roles
 - **Fase 2 — Guiones IA** ✅: chat con Claude que usa el contenido/SOPs y el
   histórico de ventas ganadas del cliente para generar guiones a medida, con
   respuestas en streaming y conversaciones guardadas por cliente.
-- **Fase 3 — Redes & Métricas**: Instagram Graph API, TikTok Business API y
-  Meta Ads. Ingesta automática de métricas y panel de medición.
-- **Más adelante**: importación directa desde Google Drive, notificaciones,
-  automatizaciones.
+- **Fase 3 — Redes & Métricas** ✅: dashboard de seguidores, alcance,
+  engagement y mejor contenido por cuenta. Cliente de **Instagram Graph API**
+  listo para enchufar (IG user id + access token) y **datos de demo** para
+  ver el panel sin esperar la aprobación de Meta. Requiere correr
+  [`supabase/03_redes.sql`](supabase/03_redes.sql).
+- **Más adelante**: aprobación de permisos de Meta para sincronización
+  automática, TikTok Business API, Meta Ads, importación directa desde Google
+  Drive, notificaciones y automatizaciones.

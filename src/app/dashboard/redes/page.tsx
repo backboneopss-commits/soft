@@ -1,36 +1,279 @@
-import { PageHeader } from "@/components/ui";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth";
+import { PageHeader, StatCard, EmptyState } from "@/components/ui";
+import { addAccount, deleteAccount, syncAccount, loadDemoData } from "./actions";
+import {
+  PLATFORM_LABELS,
+  type SocialAccount,
+  type SocialMetric,
+  type SocialPost,
+} from "@/lib/types";
 
-export default function RedesPage() {
+function n(x: number) {
+  return new Intl.NumberFormat("es-AR").format(x);
+}
+
+export default async function RedesPage({
+  searchParams,
+}: {
+  searchParams: { account?: string; msg?: string };
+}) {
+  const { profile } = await getCurrentUser();
+  const isAdmin = profile.role === "admin";
+  const supabase = createClient();
+
+  const { data: accountsData } = await supabase
+    .from("social_accounts")
+    .select("*")
+    .order("created_at", { ascending: true });
+  const accounts = (accountsData ?? []) as SocialAccount[];
+
+  const activeId = searchParams.account ?? accounts[0]?.id ?? null;
+  const active = accounts.find((a) => a.id === activeId) ?? null;
+
+  let metrics: SocialMetric[] = [];
+  let posts: SocialPost[] = [];
+  if (active) {
+    const [{ data: m }, { data: p }] = await Promise.all([
+      supabase
+        .from("social_metrics")
+        .select("*")
+        .eq("account_id", active.id)
+        .order("snapshot_date", { ascending: true }),
+      supabase
+        .from("social_posts")
+        .select("*")
+        .eq("account_id", active.id)
+        .order("likes", { ascending: false })
+        .limit(5),
+    ]);
+    metrics = (m ?? []) as SocialMetric[];
+    posts = (p ?? []) as SocialPost[];
+  }
+
+  const latest = metrics[metrics.length - 1];
+  const first = metrics[0];
+  const followerGrowth =
+    latest && first ? latest.followers - first.followers : 0;
+  const totalReach = metrics.reduce((s, x) => s + x.reach, 0);
+  const totalEngagement = metrics.reduce((s, x) => s + x.engagement, 0);
+  const engRate =
+    latest && latest.followers > 0
+      ? ((totalEngagement / metrics.length / latest.followers) * 100).toFixed(1)
+      : "0";
+  const maxFollowers = Math.max(1, ...metrics.map((x) => x.followers));
+  const minFollowers = Math.min(...metrics.map((x) => x.followers), maxFollowers);
+
   return (
     <div>
       <PageHeader
         title="Redes & Métricas"
-        subtitle="Instagram, TikTok y Facebook con métricas automáticas y anuncios."
+        subtitle="Seguidores, alcance, engagement y mejor contenido — por cuenta."
       />
 
-      <div className="card max-w-2xl">
-        <span className="badge bg-amber-500/20 text-amber-300">Fase 3</span>
-        <h2 className="mt-3 text-lg font-medium">Próximamente</h2>
-        <p className="mt-2 text-sm text-white/60">
-          Vas a conectar las cuentas de cada cliente y traer métricas
-          automáticamente: alcance, interacción, seguidores, rendimiento de
-          contenido y de anuncios (Ads).
-        </p>
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          {["Instagram", "TikTok", "Facebook"].map((red) => (
-            <div
-              key={red}
-              className="rounded-lg border border-white/10 bg-white/5 p-3 text-center text-sm"
-            >
-              {red}
-            </div>
-          ))}
+      {searchParams.msg && (
+        <div className="mb-4 rounded-lg border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm text-brand-200">
+          {searchParams.msg}
         </div>
-        <p className="mt-4 text-xs text-white/40">
-          Nota: estas plataformas usan APIs oficiales (Instagram Graph API,
-          TikTok Business API) que requieren cuentas Business y aprobación de
-          permisos por parte de Meta/TikTok. Lo dejamos preparado para enchufar.
-        </p>
+      )}
+
+      {/* Selector de cuentas */}
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        {accounts.map((a) => (
+          <Link
+            key={a.id}
+            href={`/dashboard/redes?account=${a.id}`}
+            className={`badge ${
+              a.id === activeId
+                ? "bg-brand-600/30 text-white"
+                : "bg-white/10 text-white/60"
+            }`}
+          >
+            {PLATFORM_LABELS[a.platform]} · @{a.handle.replace(/^@/, "")}
+          </Link>
+        ))}
+        {accounts.length === 0 && (
+          <span className="text-sm text-white/40">
+            No hay cuentas conectadas todavía.
+          </span>
+        )}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div>
+          {!active ? (
+            <EmptyState>
+              {isAdmin
+                ? "Conectá tu primera cuenta de red a la derecha."
+                : "Tu admin todavía no conectó cuentas de redes."}
+            </EmptyState>
+          ) : metrics.length === 0 ? (
+            <EmptyState>
+              Sin métricas todavía para @{active.handle.replace(/^@/, "")}.{" "}
+              {isAdmin
+                ? "Sincronizá o cargá datos de demo desde el panel."
+                : "Esperá a que tu admin sincronice."}
+            </EmptyState>
+          ) : (
+            <div className="space-y-6">
+              {/* KPIs */}
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <StatCard
+                  label="Seguidores"
+                  value={n(latest.followers)}
+                  hint={`${followerGrowth >= 0 ? "+" : ""}${n(
+                    followerGrowth
+                  )} en el período`}
+                />
+                <StatCard label="Alcance" value={n(totalReach)} hint="acumulado" />
+                <StatCard
+                  label="Engagement"
+                  value={n(totalEngagement)}
+                  hint="likes + comentarios"
+                />
+                <StatCard
+                  label="Tasa engagement"
+                  value={`${engRate}%`}
+                  hint="promedio diario"
+                />
+              </div>
+
+              {/* Tendencia de seguidores */}
+              <div className="card">
+                <h2 className="mb-4 font-medium">Seguidores (período)</h2>
+                <div className="flex h-40 items-end gap-1">
+                  {metrics.map((m) => {
+                    const range = maxFollowers - minFollowers || 1;
+                    const h = 15 + ((m.followers - minFollowers) / range) * 85;
+                    return (
+                      <div
+                        key={m.id}
+                        className="flex-1 rounded-t bg-brand-500/70 transition hover:bg-brand-400"
+                        style={{ height: `${h}%` }}
+                        title={`${m.snapshot_date}: ${n(m.followers)}`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Top contenido */}
+              <div className="card">
+                <h2 className="mb-4 font-medium">Mejor contenido</h2>
+                {posts.length === 0 ? (
+                  <p className="text-sm text-white/40">Sin posts todavía.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {posts.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between gap-4 border-b border-white/5 pb-3 last:border-0"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm">
+                            {p.caption ?? "(sin texto)"}
+                          </div>
+                          <div className="text-xs text-white/40">
+                            {p.media_type ?? "POST"}
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 gap-4 text-xs text-white/60">
+                          <span>♥ {n(p.likes)}</span>
+                          <span>💬 {n(p.comments)}</span>
+                          {p.permalink && (
+                            <a
+                              href={p.permalink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-brand-400 hover:underline"
+                            >
+                              Ver
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-white/30">
+                {active.last_synced_at
+                  ? `Última sincronización: ${new Date(
+                      active.last_synced_at
+                    ).toLocaleString("es-AR")}`
+                  : "Todavía sin sincronizar."}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Panel de gestión (admin) */}
+        <div className="space-y-4">
+          {isAdmin && active && (
+            <div className="card">
+              <h2 className="mb-3 font-medium">Acciones</h2>
+              <div className="space-y-2">
+                <form action={syncAccount}>
+                  <input type="hidden" name="id" value={active.id} />
+                  <button className="btn w-full">Sincronizar ahora</button>
+                </form>
+                <form action={loadDemoData}>
+                  <input type="hidden" name="id" value={active.id} />
+                  <button className="btn-ghost w-full">Cargar datos de demo</button>
+                </form>
+                <form action={deleteAccount}>
+                  <input type="hidden" name="id" value={active.id} />
+                  <button className="w-full text-xs text-red-400/70 hover:text-red-400">
+                    Desconectar cuenta
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="card">
+              <h2 className="mb-3 font-medium">Conectar cuenta</h2>
+              <form action={addAccount} className="space-y-3">
+                <div>
+                  <label className="label">Red</label>
+                  <select name="platform" className="input" defaultValue="instagram">
+                    {Object.entries(PLATFORM_LABELS).map(([v, l]) => (
+                      <option key={v} value={v} className="bg-zinc-900">
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Usuario (@)</label>
+                  <input name="handle" className="input" placeholder="tu_marca" required />
+                </div>
+                <div>
+                  <label className="label">IG user id (opcional)</label>
+                  <input name="external_id" className="input" placeholder="178414…" />
+                </div>
+                <div>
+                  <label className="label">Access token (opcional)</label>
+                  <input name="access_token" className="input" placeholder="EAAB…" />
+                </div>
+                <button className="btn w-full">Conectar</button>
+              </form>
+              <p className="mt-3 text-xs text-white/40">
+                Sin token podés cargar datos de demo. Con IG user id + token, la
+                sincronización trae métricas reales de Instagram.
+              </p>
+            </div>
+          )}
+
+          {!isAdmin && (
+            <div className="card text-sm text-white/40">
+              Solo los administradores pueden conectar y sincronizar cuentas.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

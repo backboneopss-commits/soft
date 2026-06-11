@@ -12,7 +12,8 @@ necesitás cuentas en Supabase, Vercel y Anthropic.
 2. Cuando esté listo, andá a **SQL Editor → New query**, pegá el contenido de
    [`supabase/schema.sql`](supabase/schema.sql) y dale **Run**.
 3. Repetí con [`supabase/02_guiones.sql`](supabase/02_guiones.sql) (el chat de
-   guiones).
+   guiones) y con [`supabase/03_redes.sql`](supabase/03_redes.sql) (redes y
+   métricas).
 4. Andá a **Settings → API** y copiá estos tres valores (los vas a pegar en
    Vercel):
    - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`

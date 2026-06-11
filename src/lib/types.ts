@@ -79,6 +79,52 @@ export interface GuionMessage {
   created_at: string;
 }
 
+export type SocialPlatform = "instagram" | "tiktok" | "facebook";
+
+export interface SocialAccount {
+  id: string;
+  organization_id: string;
+  platform: SocialPlatform;
+  handle: string;
+  external_id: string | null;
+  access_token: string | null;
+  connected_by: string | null;
+  last_synced_at: string | null;
+  created_at: string;
+}
+
+export interface SocialMetric {
+  id: string;
+  account_id: string;
+  organization_id: string;
+  snapshot_date: string;
+  followers: number;
+  reach: number;
+  impressions: number;
+  profile_views: number;
+  engagement: number;
+}
+
+export interface SocialPost {
+  id: string;
+  account_id: string;
+  organization_id: string;
+  external_id: string;
+  caption: string | null;
+  permalink: string | null;
+  media_type: string | null;
+  likes: number;
+  comments: number;
+  reach: number;
+  posted_at: string | null;
+}
+
+export const PLATFORM_LABELS: Record<SocialPlatform, string> = {
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  facebook: "Facebook",
+};
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrador",
   closer: "Closer",
