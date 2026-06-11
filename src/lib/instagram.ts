@@ -55,13 +55,22 @@ export async function fetchInstagramSnapshot(
   igUserId: string,
   token: string
 ): Promise<InstagramSnapshot> {
-  // 1. Datos básicos de la cuenta.
-  const account = await graphGet<{ followers_count?: number }>(
-    `${igUserId}?fields=followers_count,media_count`,
-    token
-  );
+  const errors: string[] = [];
 
-  // 2. Insights de la cuenta (opcional: requiere permisos de insights).
+  // 1. Datos básicos de la cuenta (seguidores).
+  let followers = 0;
+  try {
+    const account = await graphGet<{ followers_count?: number }>(
+      `${igUserId}?fields=followers_count,media_count`,
+      token
+    );
+    followers = account.followers_count ?? 0;
+  } catch (e) {
+    errors.push(e instanceof Error ? e.message : "cuenta");
+  }
+
+  // 2. Insights de la cuenta (requiere permisos de insights aprobados).
+  // Meta fue deprecando métricas; pedimos las más estables y toleramos fallos.
   let reach = 0;
   let impressions = 0;
   let profileViews = 0;
@@ -80,29 +89,34 @@ export async function fetchInstagramSnapshot(
   }
 
   // 3. Últimos posts con likes/comentarios.
-  const media = await graphGet<{ data: MediaItem[] }>(
-    `${igUserId}/media?fields=id,caption,permalink,media_type,like_count,comments_count,timestamp&limit=25`,
-    token
-  );
-
-  const posts = (media.data ?? []).map((m) => ({
-    externalId: m.id,
-    caption: m.caption ?? null,
-    permalink: m.permalink ?? null,
-    mediaType: m.media_type ?? null,
-    likes: m.like_count ?? 0,
-    comments: m.comments_count ?? 0,
-    postedAt: m.timestamp ?? null,
-  }));
+  let posts: InstagramSnapshot["posts"] = [];
+  try {
+    const media = await graphGet<{ data: MediaItem[] }>(
+      `${igUserId}/media?fields=id,caption,permalink,media_type,like_count,comments_count,timestamp&limit=25`,
+      token
+    );
+    posts = (media.data ?? []).map((m) => ({
+      externalId: m.id,
+      caption: m.caption ?? null,
+      permalink: m.permalink ?? null,
+      mediaType: m.media_type ?? null,
+      likes: m.like_count ?? 0,
+      comments: m.comments_count ?? 0,
+      postedAt: m.timestamp ?? null,
+    }));
+  } catch (e) {
+    errors.push(e instanceof Error ? e.message : "posts");
+  }
 
   const engagement = posts.reduce((s, p) => s + p.likes + p.comments, 0);
 
-  return {
-    followers: account.followers_count ?? 0,
-    reach,
-    impressions,
-    profileViews,
-    engagement,
-    posts,
-  };
+  // Si no se obtuvo ningún dato útil, avisamos con el motivo de Meta.
+  if (followers === 0 && posts.length === 0 && reach === 0) {
+    throw new Error(
+      errors[0] ??
+        "Meta no devolvió datos. Verificá que el IG user id sea numérico, que la cuenta sea Business/Creator y que el token tenga permisos de insights."
+    );
+  }
+
+  return { followers, reach, impressions, profileViews, engagement, posts };
 }
