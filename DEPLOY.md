@@ -11,9 +11,12 @@ necesitás cuentas en Supabase, Vercel y Anthropic.
    Anotá la contraseña de la base de datos.
 2. Cuando esté listo, andá a **SQL Editor → New query**, pegá el contenido de
    [`supabase/schema.sql`](supabase/schema.sql) y dale **Run**.
-3. Repetí con [`supabase/02_guiones.sql`](supabase/02_guiones.sql) (el chat de
-   guiones) y con [`supabase/03_redes.sql`](supabase/03_redes.sql) (redes y
-   métricas).
+3. Repetí, **en orden**, con el resto de los archivos de `supabase/`:
+   - [`02_guiones.sql`](supabase/02_guiones.sql) — chat de guiones IA
+   - [`03_redes.sql`](supabase/03_redes.sql) — redes y métricas
+   - [`04_crm.sql`](supabase/04_crm.sql) — Base de Leads (CRM de ventas)
+   - [`05_cobranzas.sql`](supabase/05_cobranzas.sql) — cobranzas y tracking de setters
+   - [`06_metas.sql`](supabase/06_metas.sql) — metas del dashboard
 4. Andá a **Settings → API** y copiá estos tres valores (los vas a pegar en
    Vercel):
    - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`

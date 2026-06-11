@@ -261,6 +261,46 @@ export interface SetterActivity {
   created_at: string;
 }
 
+export interface OrgGoals {
+  organization_id: string;
+  meta_cash_collected: number;
+  meta_unidades: number;
+  meta_tasa_cierre: number;
+  meta_agendas_calif: number;
+  meta_show_up_rate: number;
+  meta_agenda_calendario: number;
+  updated_at: string;
+}
+
+export const DEFAULT_GOALS: Omit<OrgGoals, "organization_id" | "updated_at"> = {
+  meta_cash_collected: 30000,
+  meta_unidades: 25,
+  meta_tasa_cierre: 30,
+  meta_agendas_calif: 60,
+  meta_show_up_rate: 70,
+  meta_agenda_calendario: 65,
+};
+
+// Esquema de bonuses (igual al del Sheet). Umbral → premio en USD.
+export const BONUS_SETTER = {
+  cash: [
+    { min: 55000, premio: 750 },
+    { min: 40000, premio: 350 },
+  ],
+  calificadas: [
+    { min: 70, premio: 750 },
+    { min: 60, premio: 350 },
+  ],
+};
+export const BONUS_CLOSER = {
+  cash: [
+    { min: 40000, premio: 1500 },
+    { min: 30000, premio: 1000 },
+    { min: 20000, premio: 500 },
+  ],
+  unidades: [{ min: 15, premio: 500 }],
+};
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrador",
   closer: "Closer",
