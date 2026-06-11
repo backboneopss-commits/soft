@@ -205,6 +205,62 @@ export interface Program {
   created_at: string;
 }
 
+export type TipoCuota =
+  | "PIF (Total)"
+  | "Reserva"
+  | "Semanal"
+  | "Bisemanal"
+  | "Mensual";
+export type EstadoPago = "Por Cobrar" | "Cobrado" | "En Atraso" | "No Paga";
+
+export const TIPO_CUOTA_OPTIONS: TipoCuota[] = [
+  "PIF (Total)",
+  "Reserva",
+  "Semanal",
+  "Bisemanal",
+  "Mensual",
+];
+export const ESTADO_PAGO_OPTIONS: EstadoPago[] = [
+  "Por Cobrar",
+  "Cobrado",
+  "En Atraso",
+  "No Paga",
+];
+export const ESTADO_PAGO_COLORS: Record<EstadoPago, string> = {
+  "Cobrado": "bg-emerald-500/20 text-emerald-300",
+  "Por Cobrar": "bg-amber-500/20 text-amber-300",
+  "En Atraso": "bg-orange-500/20 text-orange-300",
+  "No Paga": "bg-red-500/20 text-red-300",
+};
+
+export interface Cobranza {
+  id: string;
+  organization_id: string;
+  lead_id: string | null;
+  lead_nombre: string;
+  programa: string | null;
+  closer_id: string | null;
+  fecha_cobro: string | null;
+  tipo_cuota: TipoCuota | null;
+  monto_por_cobrar: number;
+  monto_cobrado: number;
+  estado: EstadoPago;
+  created_at: string;
+}
+
+export interface SetterActivity {
+  id: string;
+  organization_id: string;
+  setter_id: string;
+  fecha: string;
+  conversaciones: number;
+  follow_ups: number;
+  pitch_call: number;
+  calendarios_enviados: number;
+  calls_agendadas: number;
+  created_at: string;
+}
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrador",
   closer: "Closer",

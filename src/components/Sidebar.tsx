@@ -17,6 +17,8 @@ const NAV: NavItem[] = [
   { href: "/dashboard", label: "Resumen", icon: "▤" },
   { href: "/dashboard/crm", label: "CRM", icon: "◎" },
   { href: "/dashboard/ventas", label: "Ventas", icon: "↗" },
+  { href: "/dashboard/cobranzas", label: "Cobranzas", icon: "$", roles: ["admin", "closer"] },
+  { href: "/dashboard/actividad", label: "Actividad", icon: "▦" },
   { href: "/dashboard/contenido", label: "Contenido & SOPs", icon: "▥" },
   { href: "/dashboard/guiones", label: "Guiones IA", icon: "✦" },
   { href: "/dashboard/redes", label: "Redes & Métricas", icon: "◐" },
