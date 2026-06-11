@@ -79,6 +79,41 @@ Para que el login funcione bien:
 
 ---
 
+## 6. Conectar Instagram (métricas en vivo)
+
+Para que el botón **"Conectar con Instagram"** traiga métricas reales:
+
+1. **Cuenta**: la de Instagram tiene que ser **Business** o **Creator** (no
+   personal). Se cambia gratis desde la app de Instagram → Configuración →
+   Tipo de cuenta.
+2. **App de Meta**: entrá a [developers.facebook.com](https://developers.facebook.com)
+   → **Crear app** → tipo **Business**.
+3. Agregá el producto **"Instagram"** → **API setup with Instagram login**.
+   Ahí vas a ver el **Instagram app ID** y el **Instagram app secret**.
+4. En **Business login settings**, en *Redirect URIs* agregá:
+   `https://TU-URL.vercel.app/api/instagram/callback`
+   (la misma URL de tu deploy + `/api/instagram/callback`).
+5. En Vercel → **Environment Variables** agregá:
+
+   | Name | Value |
+   |------|-------|
+   | `INSTAGRAM_APP_ID` | (Instagram app ID) |
+   | `INSTAGRAM_APP_SECRET` | (Instagram app secret) |
+
+   Y **Redeploy**.
+6. Para conectar **tu** cuenta mientras la app está en modo desarrollo:
+   agregala como tester en la app de Meta (Roles → Instagram testers) y
+   aceptá la invitación desde Instagram. Para conectar cuentas de **clientes**
+   sin que sean testers, la app necesita **App Review** del permiso
+   `instagram_business_manage_insights`.
+7. Listo: en **Redes → Conectar con Instagram**, iniciás sesión, autorizás y
+   las métricas aparecen en vivo.
+
+> Los tokens de Instagram duran 60 días. Reconectá la cuenta cuando expire
+> (el dashboard te avisa si falla la actualización en vivo).
+
+---
+
 ## Notas
 
 - **Duración del chat IA**: el endpoint de guiones usa streaming. En el plan

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { PageHeader, StatCard, EmptyState } from "@/components/ui";
 import { addAccount, deleteAccount, syncAccount, loadDemoData } from "./actions";
+import { fetchInstagramSnapshot } from "@/lib/instagram";
 import {
   PLATFORM_LABELS,
   type SocialAccount,
@@ -31,6 +32,56 @@ export default async function RedesPage({
 
   const activeId = searchParams.account ?? accounts[0]?.id ?? null;
   const active = accounts.find((a) => a.id === activeId) ?? null;
+
+  // Si la cuenta tiene token, traemos métricas EN VIVO al abrir y guardamos
+  // el snapshot del día (idempotente: una fila por día). Si Meta falla,
+  // mostramos los datos guardados y un aviso.
+  let liveError: string | null = null;
+  let isLive = false;
+  if (active?.access_token && active.platform === "instagram") {
+    try {
+      const snap = await fetchInstagramSnapshot(
+        active.external_id ?? "",
+        active.access_token
+      );
+      await supabase.from("social_metrics").upsert(
+        {
+          account_id: active.id,
+          organization_id: active.organization_id,
+          snapshot_date: new Date().toISOString().slice(0, 10),
+          followers: snap.followers,
+          reach: snap.reach,
+          impressions: snap.impressions,
+          profile_views: snap.profileViews,
+          engagement: snap.engagement,
+        },
+        { onConflict: "account_id,snapshot_date" }
+      );
+      if (snap.posts.length) {
+        await supabase.from("social_posts").upsert(
+          snap.posts.map((p) => ({
+            account_id: active.id,
+            organization_id: active.organization_id,
+            external_id: p.externalId,
+            caption: p.caption,
+            permalink: p.permalink,
+            media_type: p.mediaType,
+            likes: p.likes,
+            comments: p.comments,
+            posted_at: p.postedAt,
+          })),
+          { onConflict: "account_id,external_id" }
+        );
+      }
+      await supabase
+        .from("social_accounts")
+        .update({ last_synced_at: new Date().toISOString() })
+        .eq("id", active.id);
+      isLive = true;
+    } catch (e) {
+      liveError = e instanceof Error ? e.message : "No se pudo actualizar en vivo";
+    }
+  }
 
   let metrics: SocialMetric[] = [];
   let posts: SocialPost[] = [];
@@ -75,6 +126,13 @@ export default async function RedesPage({
       {searchParams.msg && (
         <div className="mb-4 rounded-lg border border-brand-500/30 bg-brand-500/10 px-3 py-2 text-sm text-brand-200">
           {searchParams.msg}
+        </div>
+      )}
+
+      {liveError && (
+        <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+          No se pudo actualizar en vivo desde Instagram ({liveError}). Mostrando
+          los últimos datos guardados.
         </div>
       )}
 
@@ -198,12 +256,18 @@ export default async function RedesPage({
                 )}
               </div>
 
-              <p className="text-xs text-white/30">
+              <p className="flex items-center gap-2 text-xs text-white/30">
+                {isLive && (
+                  <span className="inline-flex items-center gap-1 text-emerald-400">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                    En vivo
+                  </span>
+                )}
                 {active.last_synced_at
-                  ? `Última sincronización: ${new Date(
+                  ? `Última actualización: ${new Date(
                       active.last_synced_at
                     ).toLocaleString("es-AR")}`
-                  : "Todavía sin sincronizar."}
+                  : "Todavía sin datos."}
               </p>
             </div>
           )}
@@ -235,8 +299,30 @@ export default async function RedesPage({
 
           {isAdmin && (
             <div className="card">
-              <h2 className="mb-3 font-medium">Conectar cuenta</h2>
-              <form action={addAccount} className="space-y-3">
+              <h2 className="mb-1 font-medium">Conectar Instagram</h2>
+              <p className="mb-3 text-sm text-white/50">
+                Iniciá sesión con la cuenta de Instagram (Business o Creator) y
+                autorizá el acceso. Las métricas se actualizan en vivo.
+              </p>
+              <a
+                href="/api/instagram/connect"
+                className="btn flex w-full items-center justify-center gap-2"
+              >
+                Conectar con Instagram
+              </a>
+              <p className="mt-3 text-xs text-white/40">
+                ¿Sin app de Meta configurada aún? Podés probar el panel con
+                “Cargar datos de demo”.
+              </p>
+            </div>
+          )}
+
+          {isAdmin && (
+            <details className="card">
+              <summary className="cursor-pointer text-sm text-white/50">
+                Conexión manual (avanzado)
+              </summary>
+              <form action={addAccount} className="mt-3 space-y-3">
                 <div>
                   <label className="label">Red</label>
                   <select name="platform" className="input" defaultValue="instagram">
@@ -257,15 +343,11 @@ export default async function RedesPage({
                 </div>
                 <div>
                   <label className="label">Access token (opcional)</label>
-                  <input name="access_token" className="input" placeholder="EAAB…" />
+                  <input name="access_token" className="input" placeholder="IGAA…" />
                 </div>
-                <button className="btn w-full">Conectar</button>
+                <button className="btn w-full">Agregar</button>
               </form>
-              <p className="mt-3 text-xs text-white/40">
-                Sin token podés cargar datos de demo. Con IG user id + token, la
-                sincronización trae métricas reales de Instagram.
-              </p>
-            </div>
+            </details>
           )}
 
           {!isAdmin && (
