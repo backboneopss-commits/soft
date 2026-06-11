@@ -194,9 +194,13 @@ begin
   values (trim(org_name), new_slug)
   returning * into new_org;
 
-  update profiles
-  set organization_id = new_org.id, role = 'admin'
-  where id = auth.uid();
+  -- Linkea al usuario como admin. Si por algún motivo todavía no tiene fila
+  -- de perfil (p. ej. se creó antes de existir el trigger), la crea acá mismo
+  -- para que el alta nunca quede a medias.
+  insert into profiles (id, organization_id, role)
+  values (auth.uid(), new_org.id, 'admin')
+  on conflict (id) do update
+    set organization_id = excluded.organization_id, role = 'admin';
 
   return new_org;
 end $$;
