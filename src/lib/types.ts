@@ -125,6 +125,86 @@ export const PLATFORM_LABELS: Record<SocialPlatform, string> = {
   facebook: "Facebook",
 };
 
+export type LeadCalificacion = "CALIFICADO" | "NO CALIFICADO" | "PENDIENTE";
+export type LeadShowUp = "SI" | "NO" | "REAGENDÓ";
+export type LeadEstado =
+  | "COMPRÓ"
+  | "SEÑÓ"
+  | "SEGUIMIENTO"
+  | "NO COMPRÓ"
+  | "NO SHOW"
+  | "NO CALIFICA";
+
+export const CALIFICACION_OPTIONS: LeadCalificacion[] = [
+  "CALIFICADO",
+  "NO CALIFICADO",
+  "PENDIENTE",
+];
+export const SHOW_UP_OPTIONS: LeadShowUp[] = ["SI", "NO", "REAGENDÓ"];
+export const ESTADO_OPTIONS: LeadEstado[] = [
+  "COMPRÓ",
+  "SEÑÓ",
+  "SEGUIMIENTO",
+  "NO COMPRÓ",
+  "NO SHOW",
+  "NO CALIFICA",
+];
+
+// Fuentes de lead sugeridas (datalist; el campo admite texto libre).
+export const FUENTE_OPTIONS = [
+  "Instagram DM",
+  "Instagram Ads",
+  "TikTok",
+  "YouTube",
+  "Landing",
+  "WhatsApp",
+  "Referido",
+  "Manual",
+];
+
+// Color por estado para los badges del pipeline.
+export const ESTADO_COLORS: Record<LeadEstado, string> = {
+  "COMPRÓ": "bg-emerald-500/20 text-emerald-300",
+  "SEÑÓ": "bg-teal-500/20 text-teal-300",
+  "SEGUIMIENTO": "bg-amber-500/20 text-amber-300",
+  "NO COMPRÓ": "bg-red-500/20 text-red-300",
+  "NO SHOW": "bg-zinc-500/20 text-zinc-300",
+  "NO CALIFICA": "bg-zinc-500/20 text-zinc-300",
+};
+
+export interface Lead {
+  id: string;
+  organization_id: string;
+  fecha_agenda: string | null;
+  fecha_llamada: string | null;
+  setter_id: string | null;
+  closer_id: string | null;
+  nombre: string;
+  contacto: string | null;
+  audio: string | null;
+  fuente: string | null;
+  calificacion: LeadCalificacion;
+  show_up: LeadShowUp | null;
+  estado: LeadEstado | null;
+  programa: string | null;
+  precio_pactado: number;
+  cash_collected: number;
+  monto_restante: number;
+  nota_setter: string | null;
+  nota_closer: string | null;
+  grabacion: string | null;
+  created_at: string;
+}
+
+export interface Program {
+  id: string;
+  organization_id: string;
+  name: string;
+  price: number;
+  active: boolean;
+  created_at: string;
+}
+
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrador",
   closer: "Closer",
