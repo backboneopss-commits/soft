@@ -22,6 +22,7 @@ export interface Profile {
   organization_id: string | null;
   full_name: string | null;
   role: UserRole;
+  calendly_email?: string | null;
   created_at: string;
 }
 
@@ -259,6 +260,20 @@ export interface SetterActivity {
   calendarios_enviados: number;
   calls_agendadas: number;
   created_at: string;
+}
+
+export interface CalendlySettings {
+  organization_id: string;
+  webhook_token: string;
+  signing_key: string | null;
+  access_token: string | null;
+  organization_uri: string | null;
+  subscription_uri: string | null;
+  default_setter_id: string | null;
+  default_fuente: string;
+  connected: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface OrgGoals {

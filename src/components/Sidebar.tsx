@@ -22,6 +22,7 @@ const NAV: NavItem[] = [
   { href: "/dashboard/contenido", label: "Contenido & SOPs", icon: "▥" },
   { href: "/dashboard/guiones", label: "Guiones IA", icon: "✦" },
   { href: "/dashboard/redes", label: "Redes & Métricas", icon: "◐" },
+  { href: "/dashboard/integraciones", label: "Integraciones", icon: "⇄", roles: ["admin"] },
   { href: "/dashboard/equipo", label: "Equipo", icon: "⚇", roles: ["admin"] },
 ];
 
